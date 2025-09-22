@@ -1,0 +1,38 @@
+[
+  {
+    "namaste_code": "AA12.1",
+    "namaste_term": "Jwara",
+    "icd11_code": "4A00.00",
+    "icd11_term": "Fever of unknown origin"
+  },
+  {
+    "namaste_code": "AR15.3",
+    "namaste_term": "Aamavata",
+    "icd11_code": "FA01",
+    "icd11_term": "Rheumatoid arthritis"
+  },
+  {
+    "namaste_code": "SA34.2",
+    "namaste_term": "Kasa",
+    "icd11_code": "CA14.4",
+    "icd11_term": "Acute bronchitis"
+  },
+  {
+    "namaste_code": "UN56.7",
+    "namaste_term": "Bhramaha",
+    "icd11_code": "8A01.01",
+    "icd11_term": "Vertigo"
+  },
+  {
+    "namaste_code": "AY23.5",
+    "namaste_term": "Madhumeha",
+    "icd11_code": "5A10.1",
+    "icd11_term": "Diabetes mellitus, type 2"
+  },
+  {
+    "namaste_code": "SI78.9",
+    "namaste_term": "Kalai Vatha",
+    "icd11_code": "FB02.1",
+    "icd11_term": "Osteoarthritis of knee"
+  }
+]
