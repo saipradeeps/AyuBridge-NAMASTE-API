@@ -3,59 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ayush Terminology Search Prototype (Live)</title>
-    <!-- Tailwind CSS for modern styling -->
+    <title>Ayush Terminology Search (Viewer)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* A little custom style for a professional look */
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .suggestion-item:hover {
-            background-color: #374151; /* Darker gray on hover */
-        }
+        body { font-family: 'Inter', sans-serif; }
+        .suggestion-item:hover { background-color: #f3f4f6; } /* light gray */
     </style>
-    <!-- Google Fonts for better typography -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
+<body class="bg-gray-100 text-gray-800 min-h-screen flex items-center justify-center p-4">
 
     <div class="w-full max-w-4xl mx-auto">
         <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-cyan-400">Ayush Terminology Mapper</h1>
-            <p class="text-lg text-gray-400 mt-2">A prototype for integrating AYUSH terms with modern EHR standards.</p>
+            <h1 class="text-4xl font-bold text-blue-700">Ayush Terminology Mapper (Viewer Mode)</h1>
+            <p class="text-lg text-gray-600 mt-2">A prototype for integrating AYUSH terms with modern EHR standards.</p>
         </header>
 
-        <main class="bg-gray-800 rounded-lg shadow-2xl p-6 md:p-8">
-            <!-- Search Section -->
+        <main class="bg-white rounded-lg shadow-lg p-6 md:p-8">
             <div class="mb-6">
-                <label for="diagnosis-search" class="block text-sm font-medium text-gray-300 mb-2">1. Enter Diagnosis Term</label>
+                <label for="diagnosis-search" class="block text-sm font-medium text-black-700 mb-2">1. Enter Diagnosis Term to View Mappings</label>
                 <div class="relative">
-                    <input type="text" id="diagnosis-search" class="w-full bg-gray-700 border border-gray-600 text-white rounded-md p-3 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition" placeholder="e.g., Amlapitta or Joint Pain...">
-                    <!-- Suggestions will be populated here -->
-                    <div id="suggestions-container" class="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded-md shadow-lg hidden"></div>
+                    <input type="text" id="diagnosis-search" class="w-full bg-white border border-gray-300 text-black-900 rounded-md p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="e.g., Amlapitta or Joint Pain...">
+                    <div id="suggestions-container" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg hidden"></div>
                 </div>
             </div>
 
-            <!-- Problem List Section -->
             <div class="mb-6">
-                <h2 class="text-lg font-semibold text-gray-300 mb-3">2. Selected Codes (Patient's Problem List)</h2>
-                <div id="problem-list-container" class="bg-gray-900/50 rounded-md p-4 min-h-[80px] border border-gray-700">
+                <h2 class="text-lg font-semibold text-gray-700 mb-3">2. Selected Codes (Patient's Problem List)</h2>
+                <div id="problem-list-container" class="bg-gray-50 rounded-md p-4 min-h-[80px] border border-gray-200">
                     <p class="text-gray-500 italic">Codes selected will appear here...</p>
                 </div>
             </div>
 
-            <!-- FHIR Resource Output Section -->
             <div>
-                <h2 class="text-lg font-semibold text-gray-300 mb-3">3. Generated FHIR ProblemList Resource</h2>
-                <div class="bg-black rounded-md p-4 max-h-96 overflow-auto">
+                <h2 class="text-lg font-semibold text-gray-700 mb-3">3. Generated FHIR ProblemList Resource</h2>
+                <div class="bg-gray-800 rounded-md p-4 max-h-96 overflow-auto">
                     <pre><code id="fhir-output" class="text-sm text-green-300 whitespace-pre-wrap"></code></pre>
                 </div>
             </div>
         </main>
-
     </div>
 
     <script>
@@ -98,7 +84,7 @@
                         const div = document.createElement('div');
                         div.className = 'p-3 cursor-pointer suggestion-item transition';
                         div.innerHTML = `
-                            <p class="font-semibold text-white">${item.namaste_term}</p>
+                            <p class="font-semibold text-black">${item.namaste_term}</p>
                             <p class="text-sm text-gray-400">Maps to ICD-11: ${item.icd11_term}</p>
                         `;
                         // Map the backend data structure to what the frontend functions expect
@@ -144,77 +130,45 @@
                 problemListContainer.innerHTML = `<p class="text-gray-500 italic">Codes selected will appear here...</p>`;
             } else {
                 problemListContainer.innerHTML = selectedProblems.map((problem, index) => `
-                    <div class="bg-cyan-900/50 p-3 rounded-md mb-2 flex justify-between items-center">
+                    <div class="bg-blue-200 border border-blue-300 p-3 rounded-md mb-2 flex justify-between items-center">
                         <div>
-                            <p class="font-bold text-cyan-300">${problem.ayushTerm}</p>
-                            <p class="text-xs text-gray-300">
-                                <strong>NAMASTE:</strong> ${problem.namasteCode} | 
-                                <strong>ICD-11:</strong> ${problem.icd11Code} (${problem.icd11Description})
-                            </p>
+                            <p class="font-bold text-blue-900">${problem.ayushTerm}</p>
+                            <p class="text-xs text-blue-800"><strong>NAMASTE:</strong> ${problem.namasteCode} | <strong>ICD-11:</strong> ${problem.icd11Code} (${problem.icd11Description})</p>
                         </div>
-                        <button onclick="removeProblem(${index})" class="text-red-400 hover:text-red-300 font-bold text-xl">&times;</button>
-                    </div>
-                `).join('');
+                        <button onclick="removeProblem(${index})" class="text-red-600 hover:text-red-500 font-bold text-xl">&times;</button>
+                    </div>`).join('');
             }
         }
         
-        /**
-         * Removes a problem from the selected list.
-         * @param {number} index The index of the problem to remove.
-         */
         function removeProblem(index) {
             selectedProblems.splice(index, 1);
             renderProblemList();
             generateFhirResource();
         }
 
-        /**
-         * Generates and displays the FHIR ProblemList resource JSON.
-         */
         function generateFhirResource() {
             const fhirResource = {
-                resourceType: "List",
-                id: "problem-list-example",
-                status: "current",
-                mode: "snapshot",
-                title: "Patient Problem List",
-                subject: {
-                    reference: "Patient/example",
-                    display: "John Doe"
-                },
+                resourceType: "List", id: "problem-list-example", status: "current", mode: "snapshot",
+                title: "Patient Problem List", subject: { reference: "Patient/example", display: "John Doe" },
                 date: new Date().toISOString(),
-                entry: selectedProblems.map((problem, index) => ({
-                    item: { 
+                entry: selectedProblems.map(problem => ({
+                    item: {
                         display: `Condition: ${problem.ayushTerm} / ${problem.icd11Description}`,
-                        _extension_namaste: {
-                            system: "http://nphce.org.in/namaste",
-                            code: problem.namasteCode,
-                            display: problem.ayushTerm
-                        },
-                         _extension_icd11: {
-                            system: "http://id.who.int/icd/release/11/mms",
-                            code: problem.icd11Code,
-                            display: problem.icd11Description
-                        }
+                        _extension_namaste: { system: "http://nphce.org.in/namaste", code: problem.namasteCode, display: problem.ayushTerm },
+                        _extension_icd11: { system: "http://id.who.int/icd/release/11/mms", code: problem.icd11Code, display: problem.icd11Description }
                     }
                 }))
             };
-
             fhirOutput.textContent = JSON.stringify(fhirResource, null, 2);
         }
 
-        // --- EVENT LISTENERS ---
         searchInput.addEventListener('input', () => renderSuggestions(searchInput.value));
-
-        document.addEventListener('click', (event) => {
+        document.addEventListener('click', event => {
             if (!suggestionsContainer.contains(event.target) && event.target !== searchInput) {
                 suggestionsContainer.classList.add('hidden');
             }
         });
-
-        // --- INITIALIZATION ---
         generateFhirResource();
-
     </script>
 </body>
 </html>
