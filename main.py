@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import json
 from typing import List, Dict
 
@@ -8,10 +9,26 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# --- Add this CORS middleware section ---
+# This allows your frontend (running on any origin "*") to communicate with this backend.
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+# --- End of CORS section ---
+
+
 try:
+    # Make sure this file is in the same directory as main.py
     with open("namaste_icd_mapping.json", "r") as f:
         data = json.load(f)
 except FileNotFoundError:
+    print("WARNING: namaste_icd_mapping.json not found. The API will return empty results.")
     data = [] 
 
 @app.get("/search", tags=["Search"], response_model=List[Dict])
@@ -30,9 +47,7 @@ async def search_codes(query: str):
         if query in item["namaste_term"].lower() or query in item["icd11_term"].lower()
     ]
     
-    if not results:
-        raise HTTPException(status_code=404, detail="No matching codes found.")
-        
+    # Returning an empty list is more user-friendly than a 404 for search
     return results
 
 
