@@ -34,5 +34,65 @@
     "namaste_term": "Kalai Vatha",
     "icd11_code": "FB02.1",
     "icd11_term": "Osteoarthritis of knee"
+  },
+  {
+    "namaste_code": "AY05.2",
+    "namaste_term": "Pandu Roga",
+    "icd11_code": "3B80.0",
+    "icd11_term": "Iron deficiency anaemia"
+  },
+  {
+    "namaste_code": "SA27.8",
+    "namaste_term": "Sandhivata",
+    "icd11_code": "FB02.0",
+    "icd11_term": "Osteoarthritis"
+  },
+  {
+    "namaste_code": "UN33.4",
+    "namaste_term": "Sailan-ul-Rahim",
+    "icd11_code": "GB03.Z",
+    "icd11_term": "Menorrhagia, unspecified"
+  },
+  {
+    "namaste_code": "AY45.9",
+    "namaste_term": "Shotha",
+    "icd11_code": "MD25.0",
+    "icd11_term": "Oedema"
+  },
+  {
+    "namaste_code": "SI65.1",
+    "namaste_term": "Gunmam",
+    "icd11_code": "DD30.0",
+    "icd11_term": "Gastrointestinal ulceration"
+  },
+  {
+    "namaste_code": "AY17.6",
+    "namaste_term": "Shirashoola",
+    "icd11_code": "8A80.Z",
+    "icd11_term": "Headache, unspecified"
+  },
+  {
+    "namaste_code": "UN98.2",
+    "namaste_term": "Daa'f-i-Kulya",
+    "icd11_code": "GB20.1",
+    "icd11_term": "Chronic kidney disease"
+  },
+  {
+    "namaste_code": "AY51.3",
+    "namaste_term": "Kamala",
+    "icd11_code": "DD90.1",
+    "icd11_term": "Jaundice"
+  },
+  {
+    "namaste_code": "SA89.4",
+    "namaste_term": "Neer Piralivu",
+    "icd11_code": "MG75.2",
+    "icd11_term": "Dysuria"
+  },
+  {
+    "namaste_code": "AY20.0",
+    "namaste_term": "Amalpitta",
+    "icd11_code": "DD20.0",
+    "icd11_term": "Gastro-oesophageal reflux disease"
   }
 ]
