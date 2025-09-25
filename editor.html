@@ -3,32 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ayush Terminology Mapper - Editor</title>
+    <title>AyuBridge - Doctor's Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .hero-background {
+            background: linear-gradient(135deg, #1A3E39 0%, #0D2622 100%);
+        }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 min-h-screen flex items-center justify-center p-4">
+<body class="hero-background min-h-screen">
 
-    <div class="text-center">
-        <h1 class="text-5xl font-bold text-blue-700">Editor Dashboard</h1>
-        <p class="text-2xl text-gray-600 mt-4">Coming Soon</p>
-        <div class="mt-8 bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto border border-gray-200">
-            <h2 class="text-xl font-semibold mb-3 text-gray-800">Future capabilities for this view would include:</h2>
-            <ul class="text-left list-disc list-inside text-gray-700 space-y-2">
-                <li>Searching patient records via FHIR API.</li>
-                <li>Entering new diagnoses directly.</li>
-                <li>Using the autocomplete widget to add dual-coded entries.</li>
-                <li>Saving the generated FHIR ProblemList to the patient's record.</li>
-                <li>Viewing and managing the audit trail.</li>
-            </ul>
+    <header class="bg-white bg-opacity-5 backdrop-blur-sm sticky top-0 z-10 p-4 shadow-lg">
+        <nav class="container mx-auto flex items-center justify-between">
+            <div class="flex items-center">
+                <svg class="w-8 h-8 text-white mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                <span class="text-white text-xl font-bold">AyuBridge</span>
+            </div>
+            <a href="./login.html" class="bg-[#10B981] text-white px-6 py-2 rounded-full font-semibold hover:bg-green-600 transition duration-300">Logout</a>
+        </nav>
+    </header>
+
+    <main class="flex flex-col items-center p-4 md:p-8">
+        <div class="w-full max-w-7xl bg-white bg-opacity-10 rounded-2xl p-6 md:p-8 shadow-2xl backdrop-blur-sm mt-8">
+
+            <div class="mb-10">
+                <h2 class="text-3xl font-bold text-white mb-6 border-b-2 border-green-300 pb-2">Patient Records</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-gray-200">
+                        <thead class="bg-white bg-opacity-10 text-green-200 uppercase">
+                            <tr>
+                                <th class="p-3">Patient Name</th>
+                                <th class="p-3">ABHA ID</th>
+                                <th class="p-3">Age</th>
+                                <th class="p-3">Gender</th>
+                                <th class="p-3">Last Visit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-gray-700 hover:bg-white hover:bg-opacity-5">
+                                <td class="p-3">Priya Sharma</td>
+                                <td class="p-3">12-3456-7890-1234</td>
+                                <td class="p-3">34</td>
+                                <td class="p-3">Female</td>
+                                <td class="p-3">2025-09-22</td>
+                            </tr>
+                            <tr class="border-b border-gray-700 hover:bg-white hover:bg-opacity-5">
+                                <td class="p-3">Rohan Verma</td>
+                                <td class="p-3">98-7654-3210-9876</td>
+                                <td class="p-3">45</td>
+                                <td class="p-3">Male</td>
+                                <td class="p-3">2025-09-20</td>
+                            </tr>
+                             <tr class="hover:bg-white hover:bg-opacity-5">
+                                <td class="p-3">Anjali Desai</td>
+                                <td class="p-3">56-7890-1234-5678</td>
+                                <td class="p-3">28</td>
+                                <td class="p-3">Female</td>
+                                <td class="p-3">2025-09-18</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="text-3xl font-bold text-white mb-6 border-b-2 border-green-300 pb-2">Terminology Mapper</h2>
+                <form id="search-form" class="mb-6">
+                    <div class="relative">
+                        <input type="text" id="search-input" class="w-full bg-white bg-opacity-20 border border-transparent text-white text-lg rounded-full py-3 pl-5 pr-12 focus:ring-2 focus:ring-green-300 transition placeholder-gray-400" placeholder="Search for an AYUSH term (e.g., Jvara)...">
+                        <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 bg-[#10B981] text-white rounded-full p-2 hover:bg-green-600 transition">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </button>
+                    </div>
+                </form>
+
+                <div id="results-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    </div>
+            </div>
+
         </div>
-        <a href="./login.html" class="mt-8 inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition">
-            &larr; Back to Login
-        </a>
-    </div>
+    </main>
 
+    <template id="result-template">
+        <div class="bg-white bg-opacity-5 rounded-lg p-5 text-white border border-gray-700">
+            <h3 class="text-xl font-bold text-green-300 mb-2 namaste-term"></h3>
+            <p class="text-sm text-gray-400 mb-4 namaste-code"></p>
+            <div class="space-y-3 text-sm">
+                <div>
+                    <p class="font-semibold">ICD-11 (Biomedicine):</p>
+                    <p class="text-gray-300 icd-bio"></p>
+                </div>
+                <div>
+                    <p class="font-semibold">ICD-11 (Traditional Medicine):</p>
+                    <p class="text-gray-300 icd-tm2"></p>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('search-input');
+            const searchForm = document.getElementById('search-form');
+            const resultsContainer = document.getElementById('results-container');
+            const template = document.getElementById('result-template');
+            let terminologyData = [];
+
+            // Fetch the mapping data
+            fetch('./namaste_icd_mapping.json')
+                .then(response => response.json())
+                .then(data => {
+                    terminologyData = data;
+                    displayResults(''); // Display all results initially
+                })
+                .catch(error => console.error('Error fetching terminology data:', error));
+
+            // Function to display results
+            function displayResults(query) {
+                resultsContainer.innerHTML = ''; // Clear previous results
+                const lowerCaseQuery = query.toLowerCase();
+
+                const filteredData = terminologyData.filter(item => 
+                    item.namaste_term.toLowerCase().includes(lowerCaseQuery)
+                );
+
+                if (filteredData.length === 0) {
+                    resultsContainer.innerHTML = `<p class="text-gray-400 col-span-full text-center">No results found.</p>`;
+                    return;
+                }
+
+                filteredData.forEach(item => {
+                    const clone = template.content.cloneNode(true);
+                    clone.querySelector('.namaste-term').textContent = item.namaste_term;
+                    clone.querySelector('.namaste-code').textContent = `NAMASTE Code: ${item.namaste_code}`;
+                    
+                    clone.querySelector('.icd-bio').textContent = item.icd11_bio_term ? `${item.icd11_bio_term} (${item.icd11_bio_code})` : 'N/A';
+                    clone.querySelector('.icd-tm2').textContent = item.icd11_tm2_term ? `${item.icd11_tm2_term} (${item.icd11_tm2_code})` : 'N/A';
+
+                    resultsContainer.appendChild(clone);
+                });
+            }
+
+            // Event Listeners for search
+            searchForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                displayResults(searchInput.value);
+            });
+
+            searchInput.addEventListener('input', () => {
+                displayResults(searchInput.value);
+            });
+        });
+    </script>
 </body>
 </html>

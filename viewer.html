@@ -3,46 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ayush Terminology Search (Viewer)</title>
+    <title>Ayush Terminology Mapper (Viewer)</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .suggestion-item:hover { background-color: #f3f4f6; } /* light gray */
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .hero-background {
+            background: linear-gradient(135deg, #1A3E39 0%, #0D2622 100%);
+        }
+        .suggestion-item:hover {
+            background-color: #2d574e; /* Darker green for hover */
+        }
+        /* Custom scrollbar for a better look in dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0D2622;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #10B981;
+            border-radius: 10px;
+            border: 2px solid #0D2622;
+        }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gray-100 text-gray-800 min-h-screen flex items-center justify-center p-4">
+<body class="hero-background text-gray-200 min-h-screen">
 
-    <div class="w-full max-w-4xl mx-auto">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-blue-700">Ayush Terminology Mapper (Viewer Mode)</h1>
-            <p class="text-lg text-gray-600 mt-2">A prototype for integrating AYUSH terms with modern EHR standards.</p>
+    <header class="bg-transparent absolute top-0 left-0 w-full z-10 p-4">
+        <nav class="container mx-auto flex items-center justify-between">
+            <div class="flex items-center">
+                <svg class="w-8 h-8 text-white mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                </svg>
+                <span class="text-white text-xl font-bold">AyuBridge</span>
+            </div>
+            <ul class="hidden md:flex space-x-8 text-white text-lg">
+                <li><a href="#" class="hover:text-green-300 transition duration-300">Home</a></li>
+                <li><a href="#" class="hover:text-green-300 transition duration-300">About</a></li>
+                <li><a href="#" class="hover:text-green-300 transition duration-300">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="min-h-screen flex flex-col items-center justify-center p-4 pt-24">
+        <header class="text-center mb-10">
+            <h1 class="text-white text-4xl md:text-5xl font-bold leading-tight">Ayush Terminology Mapper</h1>
+            <p class="text-green-200 text-lg md:text-xl max-w-2xl mx-auto mt-4">A prototype for integrating AYUSH terms with modern EHR standards.</p>
         </header>
 
-        <main class="bg-white rounded-lg shadow-lg p-6 md:p-8">
-            <div class="mb-6">
-                <label for="diagnosis-search" class="block text-sm font-medium text-black-700 mb-2">1. Enter Diagnosis Term to View Mappings</label>
-                <div class="relative">
-                    <input type="text" id="diagnosis-search" class="w-full bg-white border border-gray-300 text-black-900 rounded-md p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="e.g., Amlapitta or Joint Pain...">
-                    <div id="suggestions-container" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg hidden"></div>
+        <main class="w-full max-w-4xl bg-white bg-opacity-10 rounded-2xl p-6 md:p-8 shadow-2xl backdrop-blur-sm">
+            
+            <div class="space-y-8">
+                <div>
+                    <label for="diagnosis-search" class="block text-sm font-medium text-green-200 mb-2">1. Enter Diagnosis Term to View Mappings</label>
+                    <div class="relative">
+                        <input type="text" id="diagnosis-search" class="w-full bg-white bg-opacity-20 border border-transparent text-white rounded-md p-3 focus:ring-2 focus:ring-green-300 transition placeholder-gray-400" placeholder="e.g., Amlapitta or Joint Pain...">
+                        <div id="suggestions-container" class="absolute z-10 w-full mt-1 bg-[#0D2622] border border-gray-700 rounded-md shadow-lg hidden"></div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="mb-6">
-                <h2 class="text-lg font-semibold text-gray-700 mb-3">2. Selected Codes (Patient's Problem List)</h2>
-                <div id="problem-list-container" class="bg-gray-50 rounded-md p-4 min-h-[80px] border border-gray-200">
-                    <p class="text-gray-500 italic">Codes selected will appear here...</p>
+                <div>
+                    <h2 class="text-lg font-semibold text-green-200 mb-3">2. Selected Codes (Patient's Problem List)</h2>
+                    <div id="problem-list-container" class="bg-black bg-opacity-20 rounded-md p-4 min-h-[80px] border border-gray-700">
+                        <p class="text-gray-400 italic">Codes selected will appear here...</p>
+                    </div>
                 </div>
-            </div>
 
-            <div>
-                <h2 class="text-lg font-semibold text-gray-700 mb-3">3. Generated FHIR ProblemList Resource</h2>
-                <div class="bg-gray-800 rounded-md p-4 max-h-96 overflow-auto">
-                    <pre><code id="fhir-output" class="text-sm text-green-300 whitespace-pre-wrap"></code></pre>
+                <div>
+                    <h2 class="text-lg font-semibold text-green-200 mb-3">3. Generated FHIR ProblemList Resource</h2>
+                    <div class="bg-black bg-opacity-30 rounded-md p-4 max-h-96 overflow-auto">
+                        <pre><code id="fhir-output" class="text-sm text-green-300 whitespace-pre-wrap"></code></pre>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
+
+</body>
+</html>
 
     <script>
         // --- DOM ELEMENT REFERENCES ---
@@ -84,7 +125,7 @@
                         const div = document.createElement('div');
                         div.className = 'p-3 cursor-pointer suggestion-item transition';
                         div.innerHTML = `
-                            <p class="font-semibold text-black">${item.namaste_term}</p>
+                            <p class="font-semibold text-white">${item.namaste_term}</p>
                             <p class="text-sm text-gray-400">Maps to ICD-11: ${item.icd11_term}</p>
                         `;
                         // Map the backend data structure to what the frontend functions expect
