@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AyuBridge - Insurance Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        .hero-background { background: linear-gradient(135deg, #1A3E39 0%, #0D2622 100%); }
+    </style>
+</head>
+<body class="hero-background text-gray-200 min-h-screen">
+
+    <header class="bg-white bg-opacity-5 backdrop-blur-sm sticky top-0 z-10 p-4 shadow-lg">
+        <nav class="container mx-auto flex items-center justify-between">
+            <div class="flex items-center">
+                <svg class="w-8 h-8 text-white mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                <span class="text-white text-xl font-bold">AyuBridge</span>
+            </div>
+            <a href="./login.html" class="bg-[#10B981] text-white px-6 py-2 rounded-full font-semibold hover:bg-green-600 transition duration-300">Logout</a>
+        </nav>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+        <div class="w-full bg-white bg-opacity-10 rounded-2xl p-6 md:p-8 shadow-2xl backdrop-blur-sm mt-8">
+            <h1 class="text-3xl font-bold text-white mb-8">Insurance & Claims Analytics</h1>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-black bg-opacity-25 p-6 rounded-lg border border-gray-700">
+                    <h3 class="text-green-300 text-lg font-semibold">Total Patients in System</h3>
+                    <p id="total-patients" class="text-4xl font-bold text-white">0</p>
+                </div>
+                <div class="bg-black bg-opacity-25 p-6 rounded-lg border border-gray-700">
+                    <h3 class="text-green-300 text-lg font-semibold">Total Diagnoses Logged</h3>
+                    <p id="total-diagnoses" class="text-4xl font-bold text-white">0</p>
+                </div>
+                <div class="bg-black bg-opacity-25 p-6 rounded-lg border border-gray-700">
+                    <h3 class="text-green-300 text-lg font-semibold">Most Common Condition</h3>
+                    <p id="most-common" class="text-4xl font-bold text-white">N/A</p>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-black bg-opacity-25 p-6 rounded-lg border border-gray-700">
+                    <h3 class="text-xl font-bold text-white mb-4">Diagnosis Distribution</h3>
+                    <canvas id="diagnosesChart"></canvas>
+                </div>
+                <div class="bg-black bg-opacity-25 p-6 rounded-lg border border-gray-700">
+                     <h3 class="text-xl font-bold text-white mb-4">Terminology Search</h3>
+                     <input type="text" id="search-input" class="w-full bg-white bg-opacity-20 border border-transparent text-white text-lg rounded-full py-3 px-5 mb-4 focus:ring-2 focus:ring-green-300 transition placeholder-gray-400" placeholder="Verify a code (e.g., Jvara)...">
+                     <div id="search-results" class="text-center p-4 bg-black bg-opacity-20 rounded-md min-h-[100px]">
+                        <p class="text-gray-400 italic">Search results will appear here.</p>
+                     </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- MOCK DATA (SELF-CONTAINED PROTOTYPE) ---
+        const mappingsData = [
+          { "namaste_code": "AA12.1", "namaste_term": "Jwara", "icd11_code": "4A00.00", "icd11_term": "Fever of unknown origin" },
+          { "namaste_code": "AR15.3", "namaste_term": "Aamavata", "icd11_code": "FA01", "icd11_term": "Rheumatoid arthritis" },
+          { "namaste_code": "SA34.2", "namaste_term": "Kasa", "icd11_code": "CA14.4", "icd11_term": "Acute bronchitis" },
+          { "namaste_code": "UN56.7", "namaste_term": "Bhramaha", "icd11_code": "8A01.01", "icd11_term": "Vertigo" },
+          { "namaste_code": "AY23.5", "namaste_term": "Madhumeha", "icd11_code": "5A10.1", "icd11_term": "Diabetes mellitus, type 2" },
+          { "namaste_code": "SI78.9", "namaste_term": "Kalai Vatha", "icd11_code": "FB02.1", "icd11_term": "Osteoarthritis of knee" }
+        ];
+        
+        const patientsData = [
+          {
+            "patient_id": "PID001", "patient_name": "Priya Sharma",
+            "diagnoses": [ { "namaste_code": "AR15.3", "date": "2024-08-15" } ]
+          },
+          {
+            "patient_id": "PID002", "patient_name": "Rohan Verma",
+            "diagnoses": [ { "namaste_code": "SA34.2", "date": "2024-09-10" }, { "namaste_code": "AY23.5", "date": "2024-07-22" } ]
+          }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Process Data for Analytics ---
+            const totalPatients = patientsData.length;
+            const allDiagnoses = patientsData.flatMap(p => p.diagnoses);
+            const totalDiagnoses = allDiagnoses.length;
+
+            const diagnosisCounts = allDiagnoses.reduce((acc, diag) => {
+                const mapping = mappingsData.find(m => m.namaste_code === diag.namaste_code);
+                if (mapping) {
+                    acc[mapping.namaste_term] = (acc[mapping.namaste_term] || 0) + 1;
+                }
+                return acc;
+            }, {});
+            
+            const mostCommon = Object.keys(diagnosisCounts).reduce((a, b) => diagnosisCounts[a] > diagnosisCounts[b] ? a : b, 'N/A');
+
+            // --- Update Stat Cards ---
+            document.getElementById('total-patients').textContent = totalPatients;
+            document.getElementById('total-diagnoses').textContent = totalDiagnoses;
+            document.getElementById('most-common').textContent = mostCommon;
+
+            // --- Render Chart ---
+            const ctx = document.getElementById('diagnosesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(diagnosisCounts),
+                    datasets: [{
+                        label: 'Diagnosis Count',
+                        data: Object.values(diagnosisCounts),
+                        backgroundColor: ['#10B981', '#34D399', '#6EE7B7', '#A7F3D0', '#065F46', '#047857'],
+                        borderColor: '#0D2622',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#D1D5DB' // Text color for legend
+                            }
+                        }
+                    }
+                }
+            });
+
+            // --- Search Logic ---
+            const searchInput = document.getElementById('search-input');
+            const searchResults = document.getElementById('search-results');
+
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                 if (!query) {
+                    searchResults.innerHTML = `<p class="text-gray-400 italic">Search results will appear here.</p>`;
+                    return;
+                }
+                const results = mappingsData.filter(item => 
+                    item.namaste_term.toLowerCase().includes(query) ||
+                    item.icd11_term.toLowerCase().includes(query)
+                );
+
+                if (results.length > 0) {
+                    searchResults.innerHTML = results.map(r => `
+                        <div class="text-left p-2 border-b border-gray-700">
+                            <p class="font-bold text-green-300">${r.namaste_term} (${r.namaste_code})</p>
+                            <p class="text-sm text-gray-300">↳ Maps to: ${r.icd11_term} (${r.icd11_code})</p>
+                        </div>
+                    `).join('');
+                } else {
+                    searchResults.innerHTML = `<p class="text-gray-400">No matching codes found.</p>`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
