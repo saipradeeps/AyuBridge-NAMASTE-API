@@ -36,51 +36,64 @@
         </div>
     </main>
 
+
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore-compat.js"></script>
+
     <script>
-        // --- MOCK DATA (SELF-CONTAINED PROTOTYPE) ---
-        const mappingsData = [
-          { "namaste_code": "AA12.1", "namaste_term": "Jwara", "icd11_code": "4A00.00", "icd11_term": "Fever of unknown origin" },
-          { "namaste_code": "AR15.3", "namaste_term": "Aamavata", "icd11_code": "FA01", "icd11_term": "Rheumatoid arthritis" },
-          { "namaste_code": "SA34.2", "namaste_term": "Kasa", "icd11_code": "CA14.4", "icd11_term": "Acute bronchitis" },
-          { "namaste_code": "AY23.5", "namaste_term": "Madhumeha", "icd11_code": "5A10.1", "icd11_term": "Diabetes mellitus, type 2" }
-        ];
-        
-        const patientsData = [
-          {
-            "patient_id": "PID001", "patient_name": "Priya Sharma",
-            "diagnoses": [ { "namaste_code": "AR15.3", "date": "2024-08-15" } ]
-          },
-          {
-            "patient_id": "PID002", "patient_name": "Rohan Verma",
-            "diagnoses": [ { "namaste_code": "SA34.2", "date": "2024-09-10" }, { "namaste_code": "AY23.5", "date": "2024-07-22" } ]
-          }
-        ];
-        
-        // For this prototype, we'll hardcode the patient view to Priya Sharma
-        const currentPatient = patientsData.find(p => p.patient_id === 'PID001');
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const welcomeMessage = document.getElementById('welcome-message');
-            const container = document.getElementById('health-record-container');
 
-            if (currentPatient) {
-                welcomeMessage.textContent = `My Health Record for ${currentPatient.patient_name}`;
+        // --- FIREBASE CONFIGURATION ---
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+        apiKey: "AIzaSyB3rsUJsnIlBnvNo6iMIXD4yvUo17v-tx4",
+        authDomain: "ayubridge-4db4d.firebaseapp.com",
+        projectId: "ayubridge-4db4d",
+        storageBucket: "ayubridge-4db4d.firebasestorage.app",
+        messagingSenderId: "301931242885",
+        appId: "1:301931242885:web:2f6703119f460a2b0810ec",
+        measurementId: "G-FRGE5Q4VVL"
+        };
+
+        // INITIALIZE FIREBASE
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+
+        // --- DOM ELEMENT REFERENCES ---
+        const welcomeMessage = document.getElementById('welcome-message');
+        const container = document.getElementById('health-record-container');
+
+        // --- GLOBAL STATE & CONFIG ---
+        // For this prototype, we hardcode the patient view to Priya Sharma's ID.
+        const currentPatientId = 'PID001'; 
+        let liveMappingsData = [];
+        let livePatientsData = [];
+
+        // --- UI RENDERING FUNCTION ---
+        function renderHealthRecord(patientId, patients, mappings) {
+            const patient = patients.find(p => p.patient_id === patientId);
+
+            if (patient) {
+                welcomeMessage.textContent = `My Health Record for ${patient.patient_name}`;
                 
-                if (currentPatient.diagnoses.length > 0) {
-                    container.innerHTML = currentPatient.diagnoses.map(diag => {
-                        const mapping = mappingsData.find(m => m.namaste_code === diag.namaste_code) || {};
+                if (patient.diagnoses && patient.diagnoses.length > 0) {
+                    container.innerHTML = patient.diagnoses.map(diag => {
+                        // Find the full mapping details from our live mappings data
+                        const mapping = mappings.find(m => m.namaste_code === diag.namaste_code);
                         return `
                         <div class="bg-black bg-opacity-25 rounded-lg p-5 border border-gray-700">
                             <div class="flex justify-between items-start">
                                 <div>
-                                    <h3 class="text-xl font-bold text-green-300">${mapping.namaste_term || 'Unknown Term'}</h3>
-                                    <p class="text-gray-300">Modern Equivalent: ${mapping.icd11_term || 'N/A'}</p>
+                                    <h3 class="text-xl font-bold text-green-300">${mapping?.namaste_term || 'Processing...'}</h3>
+                                    <p class="text-gray-300">Modern Equivalent: ${mapping?.icd11_term || 'N/A'}</p>
                                 </div>
                                 <span class="text-sm text-gray-400 font-medium">${diag.date}</span>
                             </div>
                             <div class="mt-4 pt-4 border-t border-gray-600 text-xs text-gray-400 flex space-x-6">
-                                <span><strong>NAMASTE Code:</strong> ${mapping.namaste_code || 'N/A'}</span>
-                                <span><strong>ICD-11 Code:</strong> ${mapping.icd11_code || 'N/A'}</span>
+                                <span><strong>NAMASTE Code:</strong> ${diag.namaste_code}</span>
+                                <span><strong>ICD-11 Code:</strong> ${mapping?.icd11_code || 'N/A'}</span>
                             </div>
                         </div>
                         `;
@@ -88,11 +101,36 @@
                 } else {
                     container.innerHTML = `<p class="text-center text-gray-400 italic">You have no diagnoses on record.</p>`;
                 }
-
             } else {
-                 container.innerHTML = `<p class="text-center text-red-400">Could not find patient record.</p>`;
+                // This state occurs if the patient data hasn't loaded yet.
+                container.innerHTML = `<p class="text-center text-gray-400">Loading patient record...</p>`;
             }
+        }
+
+
+        // --- DATA LOGIC: REAL-TIME LISTENERS ---
+
+        // 1. Listen for any changes in the 'mappings' collection
+        db.collection('mappings').onSnapshot(snapshot => {
+            liveMappingsData = snapshot.docs.map(doc => ({ ...doc.data(), namaste_code: doc.id }));
+            console.log("Patient Portal: Mappings data loaded.");
+            // Re-render the health record in case the patient data was already loaded.
+            renderHealthRecord(currentPatientId, livePatientsData, liveMappingsData);
+        }, error => {
+            console.error("Error fetching mappings:", error);
         });
+
+        // 2. Listen for any changes in the 'patients' collection
+        db.collection('patients').onSnapshot(snapshot => {
+            livePatientsData = snapshot.docs.map(doc => ({ ...doc.data(), patient_id: doc.id }));
+            console.log("Patient Portal: Patients data updated.");
+            // Re-render the health record with the latest patient data.
+            renderHealthRecord(currentPatientId, livePatientsData, liveMappingsData);
+        }, error => {
+            console.error("Error fetching patients:", error);
+            container.innerHTML = `<p class="text-center text-red-400">Error: Could not connect to the health record database.</p>`;
+        });
+
     </script>
 
 </body>

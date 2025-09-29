@@ -68,108 +68,169 @@
         </div>
     </main>
 
-    <script>
-        // --- MOCK DATA (SELF-CONTAINED PROTOTYPE) ---
-        const mappingsData = [
-          { "namaste_code": "AA12.1", "namaste_term": "Jwara", "icd11_code": "4A00.00", "icd11_term": "Fever of unknown origin" },
-          { "namaste_code": "AR15.3", "namaste_term": "Aamavata", "icd11_code": "FA01", "icd11_term": "Rheumatoid arthritis" },
-          { "namaste_code": "SA34.2", "namaste_term": "Kasa", "icd11_code": "CA14.4", "icd11_term": "Acute bronchitis" },
-          { "namaste_code": "UN56.7", "namaste_term": "Bhramaha", "icd11_code": "8A01.01", "icd11_term": "Vertigo" },
-          { "namaste_code": "AY23.5", "namaste_term": "Madhumeha", "icd11_code": "5A10.1", "icd11_term": "Diabetes mellitus, type 2" },
-          { "namaste_code": "SI78.9", "namaste_term": "Kalai Vatha", "icd11_code": "FB02.1", "icd11_term": "Osteoarthritis of knee" }
-        ];
-        
-        const patientsData = [
-          {
-            "patient_id": "PID001", "patient_name": "Priya Sharma",
-            "diagnoses": [ { "namaste_code": "AR15.3", "date": "2024-08-15" } ]
-          },
-          {
-            "patient_id": "PID002", "patient_name": "Rohan Verma",
-            "diagnoses": [ { "namaste_code": "SA34.2", "date": "2024-09-10" }, { "namaste_code": "AY23.5", "date": "2024-07-22" } ]
-          },
-          { // Added more data for better charts
-            "patient_id": "PID003", "patient_name": "Anjali Desai",
-            "diagnoses": [ { "namaste_code": "SA34.2", "date": "2024-06-05" }, { "namaste_code": "AA12.1", "date": "2024-08-20" } ]
-          }
-        ];
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore-compat.js"></script>
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- Process Data for Analytics ---
-            const allDiagnoses = patientsData.flatMap(p => p.diagnoses);
+    <script>
+
+
+        // --- FIREBASE CONFIGURATION ---
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+        apiKey: "AIzaSyB3rsUJsnIlBnvNo6iMIXD4yvUo17v-tx4",
+        authDomain: "ayubridge-4db4d.firebaseapp.com",
+        projectId: "ayubridge-4db4d",
+        storageBucket: "ayubridge-4db4d.firebasestorage.app",
+        messagingSenderId: "301931242885",
+        appId: "1:301931242885:web:2f6703119f460a2b0810ec",
+        measurementId: "G-FRGE5Q4VVL"
+        };
+
+        // INITIALIZE FIREBASE
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // --- DOM ELEMENT REFERENCES ---
+        const integratedHospitalsEl = document.getElementById('integrated-hospitals');
+        const totalDiagnosesEl = document.getElementById('total-diagnoses');
+        const trendingConditionEl = document.getElementById('trending-condition');
+        const searchInput = document.getElementById('search-input');
+        const searchResults = document.getElementById('search-results');
+        const diagnosesChartCtx = document.getElementById('diagnosesChart').getContext('2d');
+        const trendsChartCtx = document.getElementById('trendsChart').getContext('2d');
+
+        // --- GLOBAL STATE & CHART INSTANCES ---
+        let liveMappingsData = [];
+        let livePatientsData = [];
+        let diagnosesChart = null; // To hold the doughnut chart instance
+        let trendsChart = null; // To hold the bar chart instance
+
+        // --- UI RENDERING & DATA PROCESSING FUNCTION ---
+        function renderDashboard(patients, mappings) {
+            if (patients.length === 0 || mappings.length === 0) {
+                totalDiagnosesEl.textContent = '...';
+                trendingConditionEl.textContent = '...';
+                return;
+            }
+
+            // --- 1. Process Data for Analytics ---
+            const allDiagnoses = patients.flatMap(p => p.diagnoses || []);
             const totalDiagnoses = allDiagnoses.length;
-            document.getElementById('total-diagnoses').textContent = totalDiagnoses;
 
             const diagnosisCounts = allDiagnoses.reduce((acc, diag) => {
-                const mapping = mappingsData.find(m => m.namaste_code === diag.namaste_code);
+                const mapping = mappings.find(m => m.namaste_code === diag.namaste_code);
                 if (mapping) {
                     acc[mapping.namaste_term] = (acc[mapping.namaste_term] || 0) + 1;
                 }
                 return acc;
             }, {});
 
-            // --- Render Doughnut Chart ---
-            const doughnutCtx = document.getElementById('diagnosesChart').getContext('2d');
-            new Chart(doughnutCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(diagnosisCounts),
-                    datasets: [{
-                        data: Object.values(diagnosisCounts),
-                        backgroundColor: ['#10B981', '#34D399', '#6EE7B7', '#A7F3D0', '#065F46', '#047857'],
-                        borderColor: '#0D2622', borderWidth: 2
-                    }]
-                },
-                options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#D1D5DB' } } } }
-            });
-            
-            // --- Render Bar Chart (Trends) ---
-            const trendsCtx = document.getElementById('trendsChart').getContext('2d');
-            new Chart(trendsCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['June', 'July', 'August', 'September'], // Mock time series
-                    datasets: [{
-                        label: 'Number of Diagnoses',
-                        data: [1, 1, 2, 1], // Mock data corresponding to the months
-                        backgroundColor: '#10B981',
-                        borderColor: '#34D399',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: { y: { beginAtZero: true, ticks: { color: '#D1D5DB' }, grid: { color: 'rgba(255,255,255,0.1)'} },
-                              x: { ticks: { color: '#D1D5DB' }, grid: { color: 'rgba(255,255,255,0.1)'} }
-                    },
-                    plugins: { legend: { display: false } }
-                }
-            });
+            const trendingCondition = Object.keys(diagnosisCounts).reduce((a, b) => diagnosisCounts[a] > diagnosisCounts[b] ? a : b, 'N/A');
 
-            // --- Search Logic ---
-            const searchInput = document.getElementById('search-input');
-            const searchResults = document.getElementById('search-results');
-            searchInput.addEventListener('input', (e) => {
-                const query = e.target.value.toLowerCase();
-                 if (!query) {
-                    searchResults.innerHTML = `<p class="text-gray-400 italic">Search results will appear here.</p>`;
-                    return;
-                }
-                const results = mappingsData.filter(item => 
-                    item.namaste_term.toLowerCase().includes(query) ||
-                    item.icd11_term.toLowerCase().includes(query)
-                );
-                if (results.length > 0) {
-                    searchResults.innerHTML = results.map(r => `
-                        <div class="text-left p-2 border-b border-gray-700">
-                            <p class="font-bold text-green-300">${r.namaste_term} (${r.namaste_code})</p>
-                            <p class="text-sm text-gray-300">↳ Maps to: ${r.icd11_term} (${r.icd11_code})</p>
-                        </div>
-                    `).join('');
-                } else {
-                    searchResults.innerHTML = `<p class="text-gray-400">No matching codes found.</p>`;
-                }
-            });
+            // --- 2. Update Stat Cards ---
+            // 'Integrated Hospitals' is a static mock value for the demo.
+            integratedHospitalsEl.textContent = '42'; 
+            totalDiagnosesEl.textContent = totalDiagnoses;
+            trendingConditionEl.textContent = trendingCondition;
+
+            // --- 3. Update or Create Doughnut Chart ---
+            const doughnutData = {
+                labels: Object.keys(diagnosisCounts),
+                datasets: [{
+                    data: Object.values(diagnosisCounts),
+                    backgroundColor: ['#10B981', '#34D399', '#6EE7B7', '#A7F3D0', '#065F46', '#047857'],
+                    borderColor: '#0D2622', borderWidth: 2
+                }]
+            };
+
+            if (diagnosesChart) {
+                diagnosesChart.data = doughnutData;
+                diagnosesChart.update();
+            } else {
+                diagnosesChart = new Chart(diagnosesChartCtx, {
+                    type: 'doughnut',
+                    data: doughnutData,
+                    options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#D1D5DB' } } } }
+                });
+            }
+            
+            // --- 4. Update or Create Bar Chart (Trends) ---
+            const trendCountsByMonth = allDiagnoses.reduce((acc, diag) => {
+                try {
+                    const month = new Date(diag.date).toLocaleString('default', { month: 'long' });
+                    acc[month] = (acc[month] || 0) + 1;
+                } catch(e) { /* ignore invalid dates */ }
+                return acc;
+            }, {});
+
+            const trendLabels = Object.keys(trendCountsByMonth);
+            const trendDataPoints = Object.values(trendCountsByMonth);
+            
+            const barChartData = {
+                labels: trendLabels,
+                datasets: [{
+                    label: 'Number of Diagnoses',
+                    data: trendDataPoints,
+                    backgroundColor: '#10B981',
+                    borderColor: '#34D399',
+                    borderWidth: 1
+                }]
+            };
+
+            if (trendsChart) {
+                trendsChart.data = barChartData;
+                trendsChart.update();
+            } else {
+                trendsChart = new Chart(trendsChartCtx, {
+                    type: 'bar',
+                    data: barChartData,
+                    options: {
+                        scales: { y: { beginAtZero: true, ticks: { color: '#D1D5DB' }, grid: { color: 'rgba(255,255,255,0.1)'} },
+                                x: { ticks: { color: '#D1D5DB' }, grid: { color: 'rgba(255,255,255,0.1)'} }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+        }
+
+        // --- SEARCH LOGIC (Identical to insurance.html) ---
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            if (!query) {
+                searchResults.innerHTML = `<p class="text-gray-400 italic">Search results will appear here.</p>`;
+                return;
+            }
+            const results = liveMappingsData.filter(item =>
+                item.namaste_term.toLowerCase().includes(query) ||
+                item.icd11_term.toLowerCase().includes(query)
+            );
+
+            if (results.length > 0) {
+                searchResults.innerHTML = results.map(r => `
+                    <div class="text-left p-2 border-b border-gray-700">
+                        <p class="font-bold text-green-300">${r.namaste_term} (${r.namaste_code})</p>
+                        <p class="text-sm text-gray-300">↳ Maps to: ${r.icd11_term} (${r.icd11_code})</p>
+                    </div>
+                `).join('');
+            } else {
+                searchResults.innerHTML = `<p class="text-gray-400">No matching codes found.</p>`;
+            }
         });
+
+
+        // --- DATA LOGIC: REAL-TIME LISTENERS ---
+        db.collection('mappings').onSnapshot(snapshot => {
+            liveMappingsData = snapshot.docs.map(doc => ({ ...doc.data(), namaste_code: doc.id }));
+            console.log("Government Portal: Mappings loaded.");
+            renderDashboard(livePatientsData, liveMappingsData);
+        }, error => console.error("Error fetching mappings:", error));
+
+        db.collection('patients').onSnapshot(snapshot => {
+            livePatientsData = snapshot.docs.map(doc => ({ ...doc.data(), patient_id: doc.id }));
+            console.log("Government Portal: Patients data updated.");
+            renderDashboard(livePatientsData, liveMappingsData);
+        }, error => console.error("Error fetching patients:", error));
     </script>
 </body>
 </html>

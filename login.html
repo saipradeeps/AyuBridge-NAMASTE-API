@@ -75,7 +75,28 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore-compat.js"></script>
+
     <script>
+
+        // --- FIREBASE CONFIGURATION ---
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+        apiKey: "AIzaSyB3rsUJsnIlBnvNo6iMIXD4yvUo17v-tx4",
+        authDomain: "ayubridge-4db4d.firebaseapp.com",
+        projectId: "ayubridge-4db4d",
+        storageBucket: "ayubridge-4db4d.firebasestorage.app",
+        messagingSenderId: "301931242885",
+        appId: "1:301931242885:web:2f6703119f460a2b0810ec",
+        measurementId: "G-FRGE5Q4VVL"
+        };
+
+        // INITIALIZE FIREBASE
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+
         const modal = document.getElementById('login-modal');
         const closeModalBtn = document.getElementById('close-modal');
         const roleWidgets = document.querySelectorAll('.role-widget');
@@ -110,18 +131,26 @@
 
         // *** UPDATED REDIRECTION LOGIC ***
         loginForm.addEventListener('submit', function(event) {
-            event.preventDefault(); 
-            const role = selectedRoleInput.value;
+        event.preventDefault(); 
+        const role = selectedRoleInput.value;
 
-            const roleToPageMap = {
-                doctor: './doctor.html',
-                patient: './patient.html',
-                insurance: './insurance.html',
-                government: './government.html'
-            };
+        // For the prototype, we can pre-define which user logs in for each role
+        const userContext = {
+            doctor: { page: './doctor.html' }, // Doctor doesn't need a specific ID in this demo
+            patient: { page: './patient.html', param: 'patientId=PID001' }, // Let's log in Priya Sharma
+            insurance: { page: './insurance.html' },
+            government: { page: './government.html' }
+        };
+        
+        const context = userContext[role];
+        let destination = context.page || './login.html'; // Fallback to login
 
-            const destination = roleToPageMap[role] || './viewer.html'; // Fallback
-            window.location.href = destination;
+        // If there's a parameter to add, append it to the URL
+        if (context.param) {
+            destination += `?${context.param}`;
+        }
+
+        window.location.href = destination;
         });
     </script>
 </body>

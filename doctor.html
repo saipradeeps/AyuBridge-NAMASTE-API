@@ -53,7 +53,7 @@
                         <label for="diagnosis-search" class="block text-sm font-medium text-green-200 mb-2">1. Add New Diagnosis (Search Term)</label>
                         <div class="relative">
                             <input type="text" id="diagnosis-search" class="w-full bg-white bg-opacity-20 border border-transparent text-white rounded-md p-3 focus:ring-2 focus:ring-green-300 transition placeholder-gray-400" placeholder="e.g., Kasa or Cough...">
-                            <div id="suggestions-container" class="absolute z-10 w-full mt-1 bg-[#0D2622] border border-gray-700 rounded-md shadow-lg hidden"></div>
+                            <div id="suggestions-container" class="absolute z-10 w-full mt-1 bg-[#0D2622] border border-gray-700 rounded-md shadow-lg hidden max-h-60 overflow-y-auto"></div>
                         </div>
                     </div>
                     <div>
@@ -61,36 +61,38 @@
                         <div id="staging-area-container" class="bg-black bg-opacity-20 rounded-md p-4 min-h-[80px] border border-gray-700">
                              <p class="text-gray-400 italic">Codes selected from search will appear here...</p>
                         </div>
-                        <button id="save-to-record-btn" class="mt-4 w-full bg-[#10B981] hover:bg-green-600 text-white font-bold py-3 px-4 rounded-full transition duration-300 text-lg">Save to Patient Record</button>
+                        <button id="save-to-record-btn" class="mt-4 w-full bg-[#10B981] hover:bg-green-600 text-white font-bold py-3 px-4 rounded-full transition duration-300 text-lg disabled:bg-gray-500 disabled:cursor-not-allowed" disabled>Save to Patient Record</button>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <script>
-        // --- MOCK DATA (SELF-CONTAINED PROTOTYPE) ---
-        const mappingsData = [
-          { "namaste_code": "AA12.1", "namaste_term": "Jwara", "icd11_code": "4A00.00", "icd11_term": "Fever of unknown origin" },
-          { "namaste_code": "AR15.3", "namaste_term": "Aamavata", "icd11_code": "FA01", "icd11_term": "Rheumatoid arthritis" },
-          { "namaste_code": "SA34.2", "namaste_term": "Kasa", "icd11_code": "CA14.4", "icd11_term": "Acute bronchitis" },
-          { "namaste_code": "UN56.7", "namaste_term": "Bhramaha", "icd11_code": "8A01.01", "icd11_term": "Vertigo" },
-          { "namaste_code": "AY23.5", "namaste_term": "Madhumeha", "icd11_code": "5A10.1", "icd11_term": "Diabetes mellitus, type 2" },
-          { "namaste_code": "SI78.9", "namaste_term": "Kalai Vatha", "icd11_code": "FB02.1", "icd11_term": "Osteoarthritis of knee" }
-        ];
-        
-        let patientsData = [
-          {
-            "patient_id": "PID001", "patient_name": "Priya Sharma",
-            "diagnoses": [ { "namaste_code": "AR15.3", "date": "2024-08-15" } ]
-          },
-          {
-            "patient_id": "PID002", "patient_name": "Rohan Verma",
-            "diagnoses": [ { "namaste_code": "SA34.2", "date": "2024-09-10" }, { "namaste_code": "AY23.5", "date": "2024-07-22" } ]
-          }
-        ];
 
-        // --- DOM ELEMENT REFERENCES ---
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore-compat.js"></script>
+
+    <script>
+
+        // --- FIREBASE CONFIGURATION ---
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+        apiKey: "AIzaSyB3rsUJsnIlBnvNo6iMIXD4yvUo17v-tx4",
+        authDomain: "ayubridge-4db4d.firebaseapp.com",
+        projectId: "ayubridge-4db4d",
+        storageBucket: "ayubridge-4db4d.firebasestorage.app",
+        messagingSenderId: "301931242885",
+        appId: "1:301931242885:web:2f6703119f460a2b0810ec",
+        measurementId: "G-FRGE5Q4VVL"
+        };
+
+        // INITIALIZE FIREBASE
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+
+
+            // --- DOM ELEMENT REFERENCES (Unchanged) ---
         const patientSelect = document.getElementById('patient-select');
         const patientProblemList = document.getElementById('patient-problem-list');
         const searchInput = document.getElementById('diagnosis-search');
@@ -98,68 +100,86 @@
         const stagingAreaContainer = document.getElementById('staging-area-container');
         const saveToRecordBtn = document.getElementById('save-to-record-btn');
 
+        // --- GLOBAL STATE VARIABLES ---
+        let liveMappingsData = []; // Will be populated by our listener
+        let livePatientsData = []; // Will be populated by our listener
         let stagedProblems = [];
         let currentPatientId = null;
 
-        // --- FUNCTIONS ---
-        function populatePatientSelector() {
+        // --- DATA LOGIC: REAL-TIME LISTENERS (The "Read" Logic) ---
+
+        // 1. Listen for any changes in the 'mappings' collection
+        db.collection('mappings').onSnapshot(snapshot => {
+            liveMappingsData = snapshot.docs.map(doc => ({ ...doc.data(), namaste_code: doc.id }));
+            console.log("Live mappings data loaded:", liveMappingsData.length, "records");
+            // If a search query is active, re-render suggestions with the new data
+            if (searchInput.value) {
+                renderSuggestions(searchInput.value);
+            }
+        }, error => {
+            console.error("Error fetching mappings:", error);
+        });
+
+        // 2. Listen for any changes in the 'patients' collection
+        db.collection('patients').onSnapshot(snapshot => {
+            livePatientsData = snapshot.docs.map(doc => ({ ...doc.data(), patient_id: doc.id }));
+            console.log("Live patients data updated:", livePatientsData.length, "records");
+
+            // When patient data changes, we must re-render the UI that depends on it.
+            const previouslySelected = currentPatientId;
+            populatePatientSelector(livePatientsData);
+            // If a patient was already selected, keep them selected after the refresh.
+            if (previouslySelected) {
+                patientSelect.value = previouslySelected;
+                renderPatientProblemList(previouslySelected, livePatientsData, liveMappingsData);
+            }
+        }, error => {
+            console.error("Error fetching patients:", error);
+            patientProblemList.innerHTML = `<p class="text-red-400">Error: Could not connect to patient database.</p>`;
+        });
+
+
+        // --- UI RENDERING FUNCTIONS (Modified to accept live data) ---
+
+        function populatePatientSelector(patients) {
             patientSelect.innerHTML = '<option value="">-- Select a Patient --</option>';
-            patientsData.forEach(p => {
+            patients.forEach(p => {
                 const option = document.createElement('option');
                 option.value = p.patient_id;
-                option.textContent = p.patient_name;
+                option.textContent = `${p.patient_name} (ID: ${p.patient_id})`;
                 patientSelect.appendChild(option);
             });
         }
 
-        function renderPatientProblemList(patientId) {
-            const patient = patientsData.find(p => p.patient_id === patientId);
-            if (!patient || patient.diagnoses.length === 0) {
+        function renderPatientProblemList(patientId, patients, mappings) {
+            const patient = patients.find(p => p.patient_id === patientId);
+            if (!patient || !patient.diagnoses || patient.diagnoses.length === 0) {
                 patientProblemList.innerHTML = `<p class="text-gray-400 italic">No diagnoses on record.</p>`;
                 return;
             }
             patientProblemList.innerHTML = patient.diagnoses.map(diag => {
-                const mapping = mappingsData.find(m => m.namaste_code === diag.namaste_code);
+                const mapping = mappings.find(m => m.namaste_code === diag.namaste_code);
                 return `
                     <div class="bg-black bg-opacity-25 p-3 rounded-md">
-                        <p class="font-bold text-green-300">${mapping?.namaste_term || 'Unknown'}</p>
+                        <p class="font-bold text-green-300">${mapping?.namaste_term || 'Loading...'}</p>
                         <p class="text-xs text-gray-300"><strong>NAMASTE:</strong> ${diag.namaste_code} | <strong>ICD-11:</strong> ${mapping?.icd11_term || 'N/A'}</p>
                         <p class="text-xs text-gray-400">Recorded on: ${diag.date}</p>
                     </div>`;
             }).join('');
         }
 
-        function renderStagingArea() {
-            if (stagedProblems.length === 0) {
-                stagingAreaContainer.innerHTML = `<p class="text-gray-400 italic">Codes selected will appear here...</p>`;
-            } else {
-                stagingAreaContainer.innerHTML = stagedProblems.map((problem, index) => `
-                    <div class="bg-blue-900 bg-opacity-50 p-3 rounded-md flex justify-between items-center">
-                        <div>
-                            <p class="font-bold text-blue-200">${problem.namaste_term}</p>
-                            <p class="text-xs text-blue-300"><strong>NAMASTE:</strong> ${problem.namaste_code} | <strong>ICD-11:</strong> ${problem.icd11_term}</p>
-                        </div>
-                        <button onclick="removeStagedProblem(${index})" class="text-red-400 hover:text-red-300 font-bold text-xl">&times;</button>
-                    </div>`).join('');
-            }
-        }
-        
-        function removeStagedProblem(index) {
-            stagedProblems.splice(index, 1);
-            renderStagingArea();
-        }
-
         function renderSuggestions(query) {
-             if (!query || query.trim().length === 0) {
+            if (!query || query.trim().length === 0) {
                 suggestionsContainer.classList.add('hidden');
                 return;
             }
             const lowerCaseQuery = query.toLowerCase();
-            const results = mappingsData.filter(item => 
+            // Use liveMappingsData instead of the old mock data
+            const results = liveMappingsData.filter(item =>
                 item.namaste_term.toLowerCase().includes(lowerCaseQuery) ||
                 item.icd11_term.toLowerCase().includes(lowerCaseQuery)
             );
-            
+
             if (results.length > 0) {
                 suggestionsContainer.innerHTML = results.map(item => `
                     <div class="p-3 cursor-pointer suggestion-item transition" data-code='${JSON.stringify(item)}'>
@@ -169,20 +189,45 @@
                 `).join('');
                 suggestionsContainer.classList.remove('hidden');
             } else {
-                 suggestionsContainer.classList.add('hidden');
+                suggestionsContainer.innerHTML = `<div class="p-3 text-gray-400">No results found.</div>`;
+                suggestionsContainer.classList.remove('hidden');
             }
         }
+        
+        // Unchanged functions: renderStagingArea, removeStagedProblem
+        function renderStagingArea() {
+            if (stagedProblems.length === 0) {
+                stagingAreaContainer.innerHTML = `<p class="text-gray-400 italic">Codes selected from search will appear here...</p>`;
+                saveToRecordBtn.disabled = true;
+            } else {
+                stagingAreaContainer.innerHTML = stagedProblems.map((problem, index) => `
+                    <div class="bg-blue-900 bg-opacity-50 p-3 rounded-md flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-blue-200">${problem.namaste_term}</p>
+                            <p class="text-xs text-blue-300"><strong>NAMASTE:</strong> ${problem.namaste_code} | <strong>ICD-11:</strong> ${problem.icd11_term}</p>
+                        </div>
+                        <button onclick="removeStagedProblem(${index})" class="text-red-400 hover:text-red-300 font-bold text-xl">&times;</button>
+                    </div>`).join('');
+                saveToRecordBtn.disabled = false;
+            }
+        }
+        function removeStagedProblem(index) {
+            stagedProblems.splice(index, 1);
+            renderStagingArea();
+        }
+
 
         // --- EVENT LISTENERS ---
         patientSelect.addEventListener('change', (e) => {
             currentPatientId = e.target.value;
             if (currentPatientId) {
-                renderPatientProblemList(currentPatientId);
+                // Pass the live data to the render function
+                renderPatientProblemList(currentPatientId, livePatientsData, liveMappingsData);
             } else {
                 patientProblemList.innerHTML = `<p class="text-gray-400 italic">Select a patient to view their record.</p>`;
             }
         });
-        
+
         searchInput.addEventListener('input', () => renderSuggestions(searchInput.value));
 
         suggestionsContainer.addEventListener('click', (e) => {
@@ -198,32 +243,40 @@
             }
         });
 
+        // --- DATA LOGIC: The "Write" Logic ---
         saveToRecordBtn.addEventListener('click', () => {
             if (!currentPatientId) {
                 alert('Please select a patient first.');
                 return;
             }
-            if (stagedProblems.length === 0) {
-                alert('No new diagnoses to save.');
-                return;
-            }
-            
-            const patient = patientsData.find(p => p.patient_id === currentPatientId);
-            stagedProblems.forEach(problem => {
-                patient.diagnoses.push({
-                    namaste_code: problem.namaste_code,
-                    date: new Date().toISOString().split('T')[0] // Get YYYY-MM-DD
-                });
-            });
+            if (stagedProblems.length === 0) return;
 
-            // Simulate save
-            renderPatientProblemList(currentPatientId);
-            stagedProblems = [];
-            renderStagingArea();
-            alert('Diagnoses saved successfully!');
+            // Get a reference to the specific patient document in Firestore.
+            const patientRef = db.collection('patients').doc(currentPatientId);
+
+            // Prepare the new diagnoses in the format Firestore expects (an array of maps).
+            const newDiagnoses = stagedProblems.map(problem => ({
+                namaste_code: problem.namaste_code,
+                date: new Date().toISOString().split('T')[0]
+            }));
+
+            // Use arrayUnion to safely add the new diagnoses to the existing array in Firestore.
+            patientRef.update({
+                diagnoses: firebase.firestore.FieldValue.arrayUnion(...newDiagnoses)
+            })
+            .then(() => {
+                console.log("Patient record updated successfully in Firestore!");
+                // Clear the staging area. The UI will update automatically because our listener will fire.
+                stagedProblems = [];
+                renderStagingArea();
+                alert('Diagnoses have been successfully saved.');
+            })
+            .catch(error => {
+                console.error("Error updating patient record: ", error);
+                alert("Could not save diagnoses. Please check console for errors.");
+            });
         });
 
-        // Close suggestions when clicking outside
         document.addEventListener('click', event => {
             if (!suggestionsContainer.contains(event.target) && event.target !== searchInput) {
                 suggestionsContainer.classList.add('hidden');
@@ -231,9 +284,11 @@
         });
 
         // --- INITIALIZATION ---
-        populatePatientSelector();
+        // Initial renders are now handled by the listeners, but we can set initial states here.
+        patientProblemList.innerHTML = `<p class="text-gray-400 italic">Loading patient data...</p>`;
         renderStagingArea();
     </script>
 
 </body>
 </html>
+
