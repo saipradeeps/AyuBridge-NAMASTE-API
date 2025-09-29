@@ -63,6 +63,13 @@
                         </div>
                         <button id="save-to-record-btn" class="mt-4 w-full bg-[#10B981] hover:bg-green-600 text-white font-bold py-3 px-4 rounded-full transition duration-300 text-lg disabled:bg-gray-500 disabled:cursor-not-allowed" disabled>Save to Patient Record</button>
                     </div>
+                    <!-- ADD THIS SECTION TO doctor.html -->
+                    <div>
+                        <h2 class="text-lg font-semibold text-green-200 mb-3">3. Generated FHIR ProblemList Resource</h2>
+                        <div class="bg-black bg-opacity-30 rounded-md p-4 max-h-96 overflow-auto border border-gray-700">
+                            <pre><code id="fhir-output" class="text-sm text-green-300 whitespace-pre-wrap">Loading FHIR resource...</code></pre>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -96,6 +103,7 @@
         const patientSelect = document.getElementById('patient-select');
         const patientProblemList = document.getElementById('patient-problem-list');
         const searchInput = document.getElementById('diagnosis-search');
+        const fhirOutput = document.getElementById('fhir-output');
         const suggestionsContainer = document.getElementById('suggestions-container');
         const stagingAreaContainer = document.getElementById('staging-area-container');
         const saveToRecordBtn = document.getElementById('save-to-record-btn');
@@ -132,6 +140,7 @@
             if (previouslySelected) {
                 patientSelect.value = previouslySelected;
                 renderPatientProblemList(previouslySelected, livePatientsData, liveMappingsData);
+                generateAndRenderFhirResource(previouslySelected, livePatientsData, liveMappingsData);
             }
         }, error => {
             console.error("Error fetching patients:", error);
@@ -166,6 +175,56 @@
                         <p class="text-xs text-gray-400">Recorded on: ${diag.date}</p>
                     </div>`;
             }).join('');
+        }
+
+        function generateAndRenderFhirResource(patientId, patients, mappings) {
+            const patient = patients.find(p => p.patient_id === patientId);
+            if (!patient) {
+                fhirOutput.textContent = 'Select a patient to generate their FHIR record.';
+                return;
+            }
+
+            const fhirResource = {
+                resourceType: "List",
+                id: `problem-list-${patient.patient_id}`,
+                status: "current",
+                mode: "snapshot",
+                title: "Patient Problem List",
+                subject: {
+                    reference: `Patient/${patient.patient_id}`,
+                    display: patient.patient_name
+                },
+                date: new Date().toISOString(),
+                entry: (patient.diagnoses || []).map(diag => {
+                    const mapping = mappings.find(m => m.namaste_code === diag.namaste_code) || {};
+                    return {
+                        item: {
+                            display: `Condition: ${mapping.namaste_term || 'Unknown'} / ${mapping.icd11_term || 'N/A'}`,
+                            // Using custom extensions to hold both codes is a valid FHIR pattern
+                            _extension: [
+                                {
+                                    url: "http://ayubridge.org/namaste-code",
+                                    valueCoding: {
+                                        system: "http://nphce.org.in/namaste",
+                                        code: diag.namaste_code,
+                                        display: mapping.namaste_term
+                                    }
+                                },
+                                {
+                                    url: "http://ayubridge.org/icd11-code",
+                                    valueCoding: {
+                                        system: "http://id.who.int/icd/release/11/mms",
+                                        code: mapping.icd11_code,
+                                        display: mapping.icd11_term
+                                    }
+                                }
+                            ]
+                        }
+                    };
+                })
+            };
+            // Pretty-print the JSON object into the code block
+            fhirOutput.textContent = JSON.stringify(fhirResource, null, 2);
         }
 
         function renderSuggestions(query) {
